@@ -16,7 +16,7 @@ class IMU:
 	interface with the hardware. 
 	Receives data over I2C.
 	"""
-	def __init__(self, bus=1, address=0x68):
+	def __init__(self, address=0x69, bus=1):
 		self.bus = SMBus(bus)
 		self.address = address
 		self.imu = MPU9250.MPU9250(self.bus, self.address)
@@ -40,6 +40,9 @@ class IMU:
 		self.imu.readSensor()
 		self.imu.computeOrientation()
 		return (self.imu.roll, self.imu.pitch, self.imu.yaw)
+
+	def get_address(self):
+		return self.address
 
 
 class GPS:
@@ -192,11 +195,13 @@ while True:
 	print('Distance: {:.1f} km'.format(round(distance.km), 2))
 	
 	# read IMU for posture
+	# TODO: add try/except clause to handle OSERROR where IMU device address changes
 	rpy = imu.read_no_filter()
+
 
 	# # print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2}".format(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2]))
 	# # print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2}".format(imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2]))
 	# # print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2}".format(imu.MagVals[0], imu.MagVals[1], imu.MagVals[2]))
 	print("IMU: roll: {0} ; pitch : {1} ; yaw : {2}".format(round(rpy[0], 2), round(rpy[1], 2), round(rpy[2], 2)))
 
-	time.sleep(0.5)
+	time.sleep(0.1)
