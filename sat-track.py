@@ -16,7 +16,7 @@ class IMU:
 	interface with the hardware. 
 	Receives data over I2C.
 	"""
-	def __init__(self, address=0x69, bus=1):
+	def __init__(self, address=0x68, bus=1):
 		self.bus = SMBus(bus)
 		self.address = address
 		self.imu = MPU9250.MPU9250(self.bus, self.address)
@@ -178,30 +178,33 @@ if __name__ == "__main__":
 	time.sleep(1)
 
 	# Start up and calibrate IMU
-	imu = IMU()
+	imu = IMU(0x68)
 	imu.calibrate(False, False)  # not calibrating to speed testing
 
-# main program loop to update device orientation
-while True:
-	# Use Skyfield to get difference between satellite and observer position at this moment
-	alt, az, distance = observer.calc_diff(satellite)
+	# main program loop to update device orientation
+	while True:
+		# Use Skyfield to get difference between satellite and observer position at this moment
+		alt, az, distance = observer.calc_diff(satellite)
 
-	if alt.degrees > 0:
-		print('The ISS is above the horizon')
+		if alt.degrees > 0:
+			print('The ISS is above the horizon')
 
-	print('-----------------------------')
-	print('Altitude:', round(alt.degrees), 2)
-	print('Azimuth:', round(az.degrees), 2)
-	print('Distance: {:.1f} km'.format(round(distance.km), 2))
-	
-	# read IMU for posture
-	# TODO: add try/except clause to handle OSERROR where IMU device address changes
-	rpy = imu.read_no_filter()
+		print('-------------Look Angles and Distance to ISS----------------')
+		print('Altitude: {0} ; Azimuth: {1} ; Distance {2:.1f}km'.format(round(alt.degrees, 2), round(az.degrees, 2), round(distance.km, 2)))
+		print('')
+		
+		# read IMU for posture
+		# TODO: add try/except clause to handle OSERROR where IMU device address changes
+		rpy = imu.read_no_filter()
 
 
-	# # print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2}".format(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2]))
-	# # print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2}".format(imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2]))
-	# # print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2}".format(imu.MagVals[0], imu.MagVals[1], imu.MagVals[2]))
-	print("IMU: roll: {0} ; pitch : {1} ; yaw : {2}".format(round(rpy[0], 2), round(rpy[1], 2), round(rpy[2], 2)))
+		# print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2}".format(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2]))
+		# print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2}".format(imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2]))
+		# print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2}".format(imu.MagVals[0], imu.MagVals[1], imu.MagVals[2]))
+		print('----------------------Device Posture------------------------')
+		print("Roll: {0} ; Pitch : {1} ; Yaw : {2}".format(round(rpy[0], 2), round(rpy[1], 2), round(rpy[2], 2)))
+		print('')
+		print('============================================================')
+		print('')
 
-	time.sleep(0.1)
+		time.sleep(0.5)
