@@ -1,11 +1,14 @@
+import io
 import time
 from datetime import datetime, timedelta
+
 from smbus2 import SMBus
 from imusensor.MPU9250 import MPU9250
 # from imusensor.filters import kalman
 from skyfield.api import load, wgs84
-from serial import Serial
+from serial import Serial, SerialException
 import pynmea2
+
 
 class IMU:
 	"""
@@ -38,6 +41,7 @@ class IMU:
 		self.imu.computeOrientation()
 		return (self.imu.roll, self.imu.pitch, self.imu.yaw)
 
+
 class GPS:
 	"""
 	Wrapper for the ublox CO99-F9P board.
@@ -48,18 +52,67 @@ class GPS:
 	def __init__(self, address="/dev/ttyACM0", baud=9600):
 		self.address = address
 		self.baud = baud
-		self.ser = Serial(self.address, self.baud)
+		self.ser = Serial(self.address, self.baud, timeout=5.0)  # Get raw byte data from serial port
+		self.sio = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser))  # convert to string type
+		self.position = {}
+		self.time_scale = load.timescale()
 
-	def read(self):
-		# tty = io.TextIOWrapper(io.FileIO(os.open("/dev/{0}".format(self.address), os.O_NOCTTY),"r+"))
-		data = self.ser.readline()
-		if data:
-			return data
+	def _read_line(self):
+		"""
+		Reads a line from the GPS at serial port ttyACM0 and attempts to parse it using pynmea2.
+		Based on the pySerial example from the pynmea2 source code: 
+		https://github.com/Knio/pynmea2#pyserial-device-example.
+		Returns a pynmea2 object.
+		"""
+		try:
+			line = self.sio.readline()
+			msg = pynmea2.parse(line)
+			return msg
+		except SerialException as e:
+			print('Device error: {}'.format(e))
+		except pynmea2.ParseError as e:
+			print('Parse error: {}'.format(e))
+	
+	def update_pos(self):
+		"""
+		Returns a Skyfield object representing the position of the observer.
+		"""
+		# get first GGA message to use as current location
+		self.position = {}
+		while not self.position:
+			nmea = self._read_line()
+			# check for GGA type (Global positioning system fix data)
+			if nmea.identifier()[2:5] == 'GGA':
+				lat = float(nmea.lat) / 100
+				if nmea.lat_dir == 'S':
+					lat = -lat
+				lon = float(nmea.lon) / 100
+				if nmea.lon_dir == 'W':
+					lon = -lon
+				alt = nmea.altitude
+				# create wgs84 object
+				self.position = wgs84.latlon(lat, lon, alt)
+
+	def get_pos(self):
+		"""Returns the last received position. Use update_pos() to update the coordinates."""
+		return self.position
+
+	def calc_diff(self, satellite):
+		"""
+		Uses the Skyfield library to perform vector subtraction of the satellite and observer positions.
+		"""
+		difference = satellite - self.position
+		t = self.time_scale.now()
+		topocentric = difference.at(t)
+		return topocentric.altaz()
+
 
 class SAT:
 	"""
 	Wrapper for the Skyfield library to get satellite ephemeris.
+	Requests TLEs from Celestrak via the Skyfield library.
 	"""
+	# TODO: add timestamp for when TLE was retrieved as class member
 	def __init__(self, catnr):
 		self.catnr = catnr
 		self.celestrak_url = 'https://celestrak.com/satcat/tle.php?CATNR={}'.format(catnr)
@@ -73,8 +126,9 @@ class SAT:
 		recent TLE for the specific satellite.
 		"""
 		self.satellite = load.tle_file(self.celestrak_url, filename=self.filename)[0]
+		return self.satellite
 
-	def gen_ephem_now(self, duration=3600, interval=60, coord_sys=1):
+	def gen_ephem_now(self, duration=3600, interval=60):
 		"""
 		Generates ephemeris starting now for the specified duration and interval.
 		Duration and interval are in seconds.
@@ -84,21 +138,22 @@ class SAT:
 		self.ephemeris = []  # reset ephemeris data
 		ts = load.timescale()
 		t = ts.now()
-		for _ in range(duration / interval):
+		iterations = duration // interval
+		for _ in range(iterations):
 			# get GCRS coordinates
 			geocentric = self.satellite.at(t)
-			if coord_sys == 1:
-			# case if specified coordinate system is WSG84
-				lat, lon = wgs84.latlon_of(geocentric)
-				height = wgs84.height_of(geocentric)
-				coord = [lat.degrees, lon.degrees, height.km]
-				self.ephemeris.append(coord)
-			elif coord_sys == 2:
-			# case if specific coordinate system is GCRS
-				self.ephemeris.append(geocentric.position.km)
+			# Convert to lat, lon, alt
+			lat, lon = wgs84.latlon_of(geocentric)
+			height = wgs84.height_of(geocentric)
+			coord = [lat.degrees, lon.degrees, height.m]
+			self.ephemeris.append(coord)
+
+			self.ephemeris.append(geocentric)
 
 			# increment time
 			t += timedelta(seconds=interval)
+
+		return self.ephemeris
 			
 	def get_ephem(self):
 		"""
@@ -107,42 +162,41 @@ class SAT:
 		return self.ephemeris
 
 
-
-		
-		
-
-
 # Driver code
 if __name__ == "__main__":
 	# Generate satellite ephemeris
 	iss = SAT(25544)
-	iss.get_tle()
-	iss.gen_ephem_now()
+	satellite = iss.get_tle()
 
-	# Receive 10 seconds of GPS data to get location lock
-	gps = GPS()
-	start = datetime.now()  # system time now
-	while datetime.now() - timedelta(start) < 10:
-		pass
-	
-	
-	# Start and calibrate IMU
+	# Get observer position
+	observer = GPS()
+	observer.update_pos()
+	print("Observer position:", observer.get_pos())
+	time.sleep(1)
+
+	# Start up and calibrate IMU
 	imu = IMU()
 	imu.calibrate(False, False)  # not calibrating to speed testing
 
-
-
-	
-
 # main program loop to update device orientation
 while True:
-	rpy = imu.read_no_filter()
-	nmea = pynmea2.parse(gps.read())
+	# Use Skyfield to get difference between satellite and observer position at this moment
+	alt, az, distance = observer.calc_diff(satellite)
 
-	# print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2}".format(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2]))
-	# print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2}".format(imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2]))
-	# print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2}".format(imu.MagVals[0], imu.MagVals[1], imu.MagVals[2]))
-	print("IMU: roll: {0} ; pitch : {1} ; yaw : {2}".format(rpy[0], rpy[1], rpy[2]))
-	print("GPS:", nmea)
-	print(type(nmea))
+	if alt.degrees > 0:
+		print('The ISS is above the horizon')
+
+	print('-----------------------------')
+	print('Altitude:', round(alt.degrees), 2)
+	print('Azimuth:', round(az.degrees), 2)
+	print('Distance: {:.1f} km'.format(round(distance.km), 2))
+	
+	# read IMU for posture
+	rpy = imu.read_no_filter()
+
+	# # print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2}".format(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2]))
+	# # print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2}".format(imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2]))
+	# # print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2}".format(imu.MagVals[0], imu.MagVals[1], imu.MagVals[2]))
+	print("IMU: roll: {0} ; pitch : {1} ; yaw : {2}".format(round(rpy[0], 2), round(rpy[1], 2), round(rpy[2], 2)))
+
 	time.sleep(0.5)
