@@ -178,33 +178,49 @@ if __name__ == "__main__":
 	time.sleep(1)
 
 	# Start up and calibrate IMU
-	imu = IMU(0x68)
+	imu = IMU(0x69)
 	imu.calibrate(False, False)  # not calibrating to speed testing
 
 	# main program loop to update device orientation
 	while True:
+		# ^^^^^^^^^^^^^RAW NMEA MESSAGE DEMO^^^^^^^^^^^^^
+		# print(observer._read_line())
+
+		# ^^^^^^^^^^^^^SAT LOCATION DEMO^^^^^^^^^^^^^
+		# ts = observer.time_scale
+		# geocentric = satellite.at(ts.now())
+		# lat, lon = wgs84.latlon_of(geocentric)
+		# height = wgs84.height_of(geocentric)
+		# coord = [lat.degrees, lon.degrees, height.m]
+		# print('')
+		# print('-------------Current lat, lon, and elevation (km) of ISS now----------------')
+		# print('Lat: {0:.3f}; Lon: {1:.3f}; Elev: {2:.1f}'.format(coord[0], coord[1], coord[2] / 1000))
+
+
+		# ^^^^^^^^^^^^^LOOK ANGLE DEMO^^^^^^^^^^^^^
 		# Use Skyfield to get difference between satellite and observer position at this moment
-		alt, az, distance = observer.calc_diff(satellite)
-
-		if alt.degrees > 0:
-			print('The ISS is above the horizon')
-
-		print('-------------Look Angles and Distance to ISS----------------')
-		print('Altitude: {0} ; Azimuth: {1} ; Distance {2:.1f}km'.format(round(alt.degrees, 2), round(az.degrees, 2), round(distance.km, 2)))
-		print('')
+		# alt, az, distance = observer.calc_diff(satellite)
+		# if alt.degrees > 0:
+		# 	print('The ISS is above the horizon')
+		# print('-------------Look Angles and Distance to ISS----------------')
+		# print('Altitude: {0} ; Azimuth: {1} ; Distance {2:.1f}km'.format(round(alt.degrees, 2), round(az.degrees, 2), round(distance.km, 2)))
+		# print('')
 		
-		# read IMU for posture
-		# TODO: add try/except clause to handle OSERROR where IMU device address changes
+		# # ^^^^^^^^^^^^^RAW DATA IMU DEMO^^^^^^^^^^^^^
+		# # read IMU for posture
+		# # TODO: add try/except clause to handle OSERROR where IMU device address changes
+		# rpy = imu.read_no_filter()
+		# print('----------------------Raw IMU Data------------------------')
+		# print('')
+		# print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2}".format(imu.imu.AccelVals[0], imu.imu.AccelVals[1], imu.imu.AccelVals[2]))
+		# print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2}".format(imu.imu.GyroVals[0], imu.imu.GyroVals[1], imu.imu.GyroVals[2]))
+		# print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2}".format(imu.imu.MagVals[0], imu.imu.MagVals[1], imu.imu.MagVals[2]))
+
+		# ^^^^^^^^^^^^^FUSED DATA IMU DEMO^^^^^^^^^^^^^
 		rpy = imu.read_no_filter()
-
-
-		# print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2}".format(imu.AccelVals[0], imu.AccelVals[1], imu.AccelVals[2]))
-		# print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2}".format(imu.GyroVals[0], imu.GyroVals[1], imu.GyroVals[2]))
-		# print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2}".format(imu.MagVals[0], imu.MagVals[1], imu.MagVals[2]))
-		print('----------------------Device Posture------------------------')
+		print('----------------------IMU Posture------------------------')
 		print("Roll: {0} ; Pitch : {1} ; Yaw : {2}".format(round(rpy[0], 2), round(rpy[1], 2), round(rpy[2], 2)))
-		print('')
-		print('============================================================')
-		print('')
+	
 
+		# ^^^^^^^^^^^^^DO NOT COMMENT^^^^^^^^^^^^^
 		time.sleep(0.5)
