@@ -2,47 +2,9 @@ import io
 import time
 from datetime import datetime, timedelta
 
-from smbus2 import SMBus
-from imusensor.MPU9250 import MPU9250
-# from imusensor.filters import kalman
 from skyfield.api import load, wgs84
 from serial import Serial, SerialException
 import pynmea2
-
-
-class IMU:
-	"""
-	Wrapper for the MPU9250. Uses the imusensor and smbus2 libraries to
-	interface with the hardware. 
-	Receives data over I2C.
-	"""
-	def __init__(self, address=0x68, bus=1):
-		self.bus = SMBus(bus)
-		self.address = address
-		self.imu = MPU9250.MPU9250(self.bus, self.address)
-		print("Starting up MPU9250")
-		self.imu.begin()
-
-	def calibrate(self, gyro=True, accel=True, file_path=None):
-		"""Calibrates the gyro and/or accelerometer."""
-		if gyro:
-			print("Calibrating MPU9250 gyroscope")
-			self.imu.caliberateGyro()
-		if accel:
-			print("Calibrating MPU9250 accelerometer")
-			self.imu.caliberateAccelerometer()
-		if file_path:
-			print("Calibrating MPU9250 from file")
-			self.imu.loadCalibDataFromFile(file_path)
-
-	def read_no_filter(self):
-		"""Reads estimated roll, pitch, and yaw from the IMU. No filter applied."""
-		self.imu.readSensor()
-		self.imu.computeOrientation()
-		return (self.imu.roll, self.imu.pitch, self.imu.yaw)
-
-	def get_address(self):
-		return self.address
 
 
 class GPS:
@@ -177,10 +139,6 @@ if __name__ == "__main__":
 	print("Observer position:", observer.get_pos())
 	time.sleep(1)
 
-	# Start up and calibrate IMU
-	imu = IMU(0x69)
-	imu.calibrate(False, False)  # not calibrating to speed testing
-
 	# main program loop to update device orientation
 	while True:
 		# ^^^^^^^^^^^^^RAW NMEA MESSAGE DEMO^^^^^^^^^^^^^
@@ -199,28 +157,13 @@ if __name__ == "__main__":
 
 		# ^^^^^^^^^^^^^LOOK ANGLE DEMO^^^^^^^^^^^^^
 		# Use Skyfield to get difference between satellite and observer position at this moment
-		# alt, az, distance = observer.calc_diff(satellite)
-		# if alt.degrees > 0:
-		# 	print('The ISS is above the horizon')
-		# print('-------------Look Angles and Distance to ISS----------------')
-		# print('Altitude: {0} ; Azimuth: {1} ; Distance {2:.1f}km'.format(round(alt.degrees, 2), round(az.degrees, 2), round(distance.km, 2)))
-		# print('')
+		alt, az, distance = observer.calc_diff(satellite)
+		if alt.degrees > 0:
+			print('The ISS is above the horizon')
+		print('-------------Look Angles and Distance to ISS----------------')
+		print('Altitude: {0} ; Azimuth: {1} ; Distance {2:.1f}km'.format(round(alt.degrees, 2), round(az.degrees, 2), round(distance.km, 2)))
+		print('')
 		
-		# # ^^^^^^^^^^^^^RAW DATA IMU DEMO^^^^^^^^^^^^^
-		# # read IMU for posture
-		# # TODO: add try/except clause to handle OSERROR where IMU device address changes
-		# rpy = imu.read_no_filter()
-		# print('----------------------Raw IMU Data------------------------')
-		# print('')
-		# print ("Accel x: {0} ; Accel y : {1} ; Accel z : {2}".format(imu.imu.AccelVals[0], imu.imu.AccelVals[1], imu.imu.AccelVals[2]))
-		# print ("Gyro x: {0} ; Gyro y : {1} ; Gyro z : {2}".format(imu.imu.GyroVals[0], imu.imu.GyroVals[1], imu.imu.GyroVals[2]))
-		# print ("Mag x: {0} ; Mag y : {1} ; Mag z : {2}".format(imu.imu.MagVals[0], imu.imu.MagVals[1], imu.imu.MagVals[2]))
-
-		# ^^^^^^^^^^^^^FUSED DATA IMU DEMO^^^^^^^^^^^^^
-		rpy = imu.read_no_filter()
-		print('----------------------IMU Posture------------------------')
-		print("Roll: {0} ; Pitch : {1} ; Yaw : {2}".format(round(rpy[0], 2), round(rpy[1], 2), round(rpy[2], 2)))
-	
 
 		# ^^^^^^^^^^^^^DO NOT COMMENT^^^^^^^^^^^^^
 		time.sleep(0.5)
