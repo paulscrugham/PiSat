@@ -1,13 +1,15 @@
-import time
 from gps import GPS
 from sat import SAT
 import PySimpleGUI as sg
+
+REFRESH_RATE = 500  # used with window.read() to set the data refresh rate
 
 # Generate satellite ephemeris
 iss = SAT(25544)
 satellite = iss.get_tle()
 
 # Get observer position
+# TODO: add while loop to handle sat lock - took awhile to start streaming GPS data on 5/12
 observer = GPS()
 observer.update_pos()
 print("Observer position:", observer.get_pos())
@@ -25,7 +27,7 @@ layout = [
 window = sg.Window('SatTrack', layout)
 
 while True:
-	event, values = window.read(1)
+	event, values = window.read(REFRESH_RATE)
 	print(event, values)
 
 	alt, az, distance = observer.calc_diff(satellite)
@@ -43,8 +45,6 @@ while True:
 	window['-ALT-'].update(round(alt.degrees, 2))
 	window['-AZ-'].update(round(az.degrees, 2))
 	window['-DIST-'].update(round(distance.km, 2))
-
-	time.sleep(0.5)
 
 window.close()
 
