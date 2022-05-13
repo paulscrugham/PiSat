@@ -7,20 +7,19 @@ class SAT:
 	Requests TLEs from Celestrak via the Skyfield library.
 	"""
 	# TODO: add timestamp for when TLE was retrieved as class member
-	def __init__(self, catnr):
-		self.catnr = catnr
-		self.celestrak_url = 'https://celestrak.com/satcat/tle.php?CATNR={}'.format(catnr)
-		self.filename = 'tle-CATNR-{}.txt'.format(catnr)
-		self.satellite = None
+	def __init__(self):
+		self.celestrak_url = 'https://celestrak.com/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle'
+		self.filename = 'amateur.txt'
+		self.satellites = None
 		self.ephemeris = None
 	
-	def get_tle(self):
+	def get_tles(self):
 		"""
 		Uses the Skyfield library to make an API call to Celestrak for the most
 		recent TLE for the specific satellite.
 		"""
-		self.satellite = load.tle_file(self.celestrak_url, filename=self.filename)[0]
-		return self.satellite
+		self.satellites = load.tle_file(self.celestrak_url, filename=self.filename)
+		return self.satellites
 
 	def gen_ephem_now(self, duration=3600, interval=60):
 		"""
