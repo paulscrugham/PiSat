@@ -3,6 +3,7 @@ from gps import GPS
 from sat import SAT
 from skyfield.api import load
 import PySimpleGUI as sg
+import math
 
 DEBUG = False
 
@@ -59,17 +60,76 @@ for row, entry in enumerate(USER_SATS):
 		else:
 			sat_data[row].append(0)
 
-table_layout = [
-	[sg.Text('Look Angles and Distance to ISS')],
+# Graph constants
+C_LEN = 800  # must be divisible by 2
+C_CENTER = (C_LEN / 2, C_LEN / 2)
+C_OFFSET = 200
+C_LEN_OFF = C_LEN - C_OFFSET
+
+# Skyplot Graphic constants
+ALT_MINOR = 1
+ALT_MAJOR = 2
+
+def plot_polar(az, alt):
+	# don't plot point if altitude is below 0 degrees
+	# if alt < 0:
+	# 	return None
+	
+	# calculate radius in pixels
+	magnitude = (90 - abs(alt)) / 90
+	radius = C_LEN_OFF / 2 * magnitude
+
+	# calculate azimuth x, y
+	az_rads = math.radians(az)
+	x = math.sin(az_rads) * radius + C_CENTER[0]
+	y = math.cos(az_rads) * radius + C_CENTER[1]
+	return x, y
+
+def draw_azimuth_lines(graph, divs=12):
+	# draw azimuth lines
+	divs = 12
+	radius = C_LEN_OFF / 2
+	for i in range(divs):
+		az_rads = math.radians(i * 360 / divs)
+		x_to = math.sin(az_rads) * radius + C_CENTER[0]
+		y_to = math.cos(az_rads) * radius + C_CENTER[1]
+		line_to = (x_to, y_to)
+		graph.draw_line(C_CENTER, line_to)
+		graph.draw_text(int(i * 360 / divs), line_to)
+
+def draw_altitude_circles(graph, divs=6):
+	# draw altitude circles
+	circle_offset = C_LEN_OFF / 2 / divs
+	angle_offset = 90 / divs
+	radius = circle_offset
+	angle_label = 90 - angle_offset
+	line_width = ALT_MINOR
+	for i in range(divs):	
+		if i == divs - 1:
+			line_width = ALT_MAJOR
+		graph.draw_circle(C_CENTER, radius, line_color='black', line_width=line_width)
+		graph.draw_text(int(angle_label), (C_CENTER[0], C_CENTER[1] + radius))
+		radius += circle_offset
+		angle_label -= angle_offset
+
+layout = [
+	[sg.Button('Sky Plot View')],
 	[sg.Table(values=sat_data, headings=headings, key='SAT_TABLE')],
+	[sg.Graph(canvas_size=(C_LEN, C_LEN), graph_bottom_left=(0, 0), graph_top_right=(C_LEN, C_LEN), background_color='white', key='skyplot')],
 	[sg.Button('Exit')]
 ]
 
-skyplot_layout = [
-	[sg.Graph(canvas_size=(400, 400), graph_bottom_left=(0, 0), graph_top_right=(400, 400))]
-]
+window = sg.Window('SatTrack', layout, finalize=True)
 
-window = sg.Window('SatTrack', table_layout)
+skyplot = window['skyplot']
+skyplot.draw_point(C_CENTER, size=6)
+draw_altitude_circles(skyplot)
+draw_azimuth_lines(skyplot)
+
+# initialize list of sat points
+sat_points = []
+for _ in USER_SATS:
+	sat_points.append(skyplot.draw_point(C_CENTER, size=6, color='red'))
 
 while True:
 	event, values = window.read(REFRESH_RATE)
@@ -81,15 +141,26 @@ while True:
 		sat_data[row][2] = round(alt.degrees, 2)
 		sat_data[row][3] = round(az.degrees, 2)
 		sat_data[row][4] = round(distance.km, 2)
+		new_x, new_y = plot_polar(az.degrees, alt.degrees)
+		skyplot.RelocateFigure(sat_points[row], new_x, new_y)
 	
 	# sort sat_data by distance to observer
 
 	if event in (None, 'Exit'):
 		break
 
+	# if event == 'Table View':
+	# 	current_layout = table_layout
+
+	# if event == 'Sky Plot View':
+	# 	current_layout = skyplot_layout
+
+
 	# Update the "output" text element
 	# to be the value of "input" element
 	window['SAT_TABLE'].update(sat_data)
+
+
 
 
 window.close()
