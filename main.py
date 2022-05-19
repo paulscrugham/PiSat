@@ -38,7 +38,7 @@ by_number = {sat.model.satnum: sat for sat in satellites}
 # TODO: add while loop to handle sat lock - took awhile to start streaming GPS data on 5/12
 observer = GPS()
 observer.update_pos()
-debug_print("Observer position:", observer.get_pos())
+debug_print("Observer position:{}".format(observer.get_pos()))
 
 sg.theme('Dark')
 
