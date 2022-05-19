@@ -19,16 +19,14 @@ USER_SATS = {
 	'27844': 	{'up': '', 					'down': '437.470 '} # CUTE-1
 }
 
-def debug_print(element):
-	if DEBUG: print(element)
-
 # other CelesTrak URLs/file names
 # 'https://celestrak.com/satcat/tle.php?CATNR={}'.format(25544)
 # 'tle-CATNR-{}.txt'.format(25544)
 
 # Download TLEs from the CelesTrak amateur radio group
 satellites = load.tle_file('https://celestrak.com/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle', 'amateur.txt')
-debug_print(satellites)
+
+if DEBUG: print(satellites)
 
 # build lookup dictionary for satellites
 # based on: https://rhodesmill.org/skyfield/earth-satellites.html#loading-a-tle-file
@@ -38,7 +36,7 @@ by_number = {sat.model.satnum: sat for sat in satellites}
 # TODO: add while loop to handle sat lock - took awhile to start streaming GPS data on 5/12
 observer = GPS()
 observer.update_pos()
-debug_print("Observer position:{}".format(observer.get_pos()))
+if DEBUG: print("Observer position:", observer.get_pos())
 
 sg.theme('Dark')
 
@@ -75,7 +73,7 @@ window = sg.Window('SatTrack', table_layout)
 
 while True:
 	event, values = window.read(REFRESH_RATE)
-	debug_print(event, values)
+	if DEBUG: print(event, values)
 
 	for row, entry in enumerate(USER_SATS):
 		sat = by_number[int(entry)]  # look up sat in dictionary of all sats
