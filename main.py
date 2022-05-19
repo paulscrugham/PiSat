@@ -4,6 +4,8 @@ from sat import SAT
 from skyfield.api import load
 import PySimpleGUI as sg
 
+DEBUG = False
+
 REFRESH_RATE = 1000  # used with window.read() to set the data refresh rate
 
 # constant variable to store user provided sat data.
@@ -17,13 +19,16 @@ USER_SATS = {
 	'27844': 	{'up': '', 					'down': '437.470 '} # CUTE-1
 }
 
+def debug_print(element):
+	if DEBUG: print(element)
+
 # other CelesTrak URLs/file names
 # 'https://celestrak.com/satcat/tle.php?CATNR={}'.format(25544)
 # 'tle-CATNR-{}.txt'.format(25544)
 
 # Download TLEs from the CelesTrak amateur radio group
 satellites = load.tle_file('https://celestrak.com/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle', 'amateur.txt')
-print(satellites)
+debug_print(satellites)
 
 # build lookup dictionary for satellites
 # based on: https://rhodesmill.org/skyfield/earth-satellites.html#loading-a-tle-file
@@ -33,7 +38,7 @@ by_number = {sat.model.satnum: sat for sat in satellites}
 # TODO: add while loop to handle sat lock - took awhile to start streaming GPS data on 5/12
 observer = GPS()
 observer.update_pos()
-print("Observer position:", observer.get_pos())
+debug_print("Observer position:", observer.get_pos())
 
 sg.theme('Dark')
 
@@ -56,17 +61,21 @@ for row, entry in enumerate(USER_SATS):
 		else:
 			sat_data[row].append(0)
 
-layout = [
+table_layout = [
 	[sg.Text('Look Angles and Distance to ISS')],
 	[sg.Table(values=sat_data, headings=headings, key='SAT_TABLE')],
 	[sg.Button('Exit')]
 ]
 
-window = sg.Window('SatTrack', layout)
+skyplot_layout = [
+	[sg.Graph(canvas_size=(400, 400), graph_bottom_left=(0, 0), graph_top_right=(400, 400))]
+]
+
+window = sg.Window('SatTrack', table_layout)
 
 while True:
 	event, values = window.read(REFRESH_RATE)
-	print(event, values)
+	debug_print(event, values)
 
 	for row, entry in enumerate(USER_SATS):
 		sat = by_number[int(entry)]  # look up sat in dictionary of all sats
