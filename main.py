@@ -62,9 +62,9 @@ for row, entry in enumerate(USER_SATS):
 			sat_data[row].append(0)
 
 # Graph constants
-C_LEN = 800  # must be divisible by 2
+C_LEN = 600  # must be divisible by 2
 C_CENTER = (C_LEN / 2, C_LEN / 2)
-C_OFFSET = 200
+C_OFFSET = 10
 C_LEN_OFF = C_LEN - C_OFFSET
 
 # Skyplot Graphic constants
@@ -113,23 +113,16 @@ def draw_altitude_circles(graph, divs=6):
 		radius += circle_offset
 		angle_label -= angle_offset
 
-layout = [
-	[sg.Button('Sky Plot View')],
-	[
-		sg.Table(values=sat_data, 
-			headings=headings, 
-			key='SAT_TABLE'), 
-		sg.Graph(canvas_size=(C_LEN, C_LEN), 
+tab1_layout = [
+	[sg.Table(values=sat_data, 
+				headings=headings, 
+				key='SAT_TABLE')]
+]
+tab2_layout = [
+	[sg.Graph(canvas_size=(C_LEN, C_LEN), 
 			graph_bottom_left=(0, 0), 
 			graph_top_right=(C_LEN, C_LEN),
-			key='skyplot')
-	],
-	[sg.Button('Exit')]
-
-]
-
-tab2_layout = [
-	[sg.Graph(canvas_size=(C_LEN, C_LEN), graph_bottom_left=(0, 0), graph_top_right=(C_LEN, C_LEN), background_color='white', key='skyplot')]
+			key='skyplot')]
 ]
 
 tab_group_layout = [[
