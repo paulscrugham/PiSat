@@ -1,3 +1,4 @@
+from turtle import color
 from pkg_resources import EntryPoint
 from gps import GPS
 from sat import SAT
@@ -76,7 +77,7 @@ def plot_polar(az, alt):
 	# 	return None
 	
 	# calculate radius in pixels
-	magnitude = (90 - abs(alt)) / 90
+	magnitude = (90 - alt) / 90
 	radius = C_LEN_OFF / 2 * magnitude
 
 	# calculate azimuth x, y
@@ -94,8 +95,8 @@ def draw_azimuth_lines(graph, divs=12):
 		x_to = math.sin(az_rads) * radius + C_CENTER[0]
 		y_to = math.cos(az_rads) * radius + C_CENTER[1]
 		line_to = (x_to, y_to)
-		graph.draw_line(C_CENTER, line_to)
-		graph.draw_text(int(i * 360 / divs), line_to)
+		graph.draw_line(C_CENTER, line_to, color='white')
+		graph.draw_text(int(i * 360 / divs), line_to, color='white')
 
 def draw_altitude_circles(graph, divs=6):
 	# draw altitude circles
@@ -107,29 +108,39 @@ def draw_altitude_circles(graph, divs=6):
 	for i in range(divs):	
 		if i == divs - 1:
 			line_width = ALT_MAJOR
-		graph.draw_circle(C_CENTER, radius, line_color='black', line_width=line_width)
-		graph.draw_text(int(angle_label), (C_CENTER[0], C_CENTER[1] + radius))
+		graph.draw_circle(C_CENTER, radius, line_color='white', line_width=line_width)
+		graph.draw_text(int(angle_label), (C_CENTER[0], C_CENTER[1] + radius), color='white')
 		radius += circle_offset
 		angle_label -= angle_offset
 
 layout = [
 	[sg.Button('Sky Plot View')],
-	[sg.Table(values=sat_data, headings=headings, key='SAT_TABLE')],
-	[sg.Graph(canvas_size=(C_LEN, C_LEN), graph_bottom_left=(0, 0), graph_top_right=(C_LEN, C_LEN), background_color='white', key='skyplot')],
+	[
+		sg.Table(values=sat_data, 
+			headings=headings, 
+			key='SAT_TABLE'), 
+		sg.Graph(canvas_size=(C_LEN, C_LEN), 
+			graph_bottom_left=(0, 0), 
+			graph_top_right=(C_LEN, C_LEN),
+			key='skyplot')
+	],
 	[sg.Button('Exit')]
 ]
 
 window = sg.Window('SatTrack', layout, finalize=True)
 
 skyplot = window['skyplot']
-skyplot.draw_point(C_CENTER, size=6)
+skyplot.draw_point(C_CENTER, size=6, color='white')
 draw_altitude_circles(skyplot)
 draw_azimuth_lines(skyplot)
 
 # initialize list of sat points
 sat_points = []
-for _ in USER_SATS:
+sat_labels = []
+for entry in USER_SATS:
+	sat = by_number[int(entry)]
 	sat_points.append(skyplot.draw_point(C_CENTER, size=6, color='red'))
+	sat_labels.append(skyplot.draw_text(sat.name, (C_CENTER[0], C_CENTER[1]), color='white'))
 
 while True:
 	event, values = window.read(REFRESH_RATE)
@@ -143,6 +154,7 @@ while True:
 		sat_data[row][4] = round(distance.km, 2)
 		new_x, new_y = plot_polar(az.degrees, alt.degrees)
 		skyplot.RelocateFigure(sat_points[row], new_x, new_y)
+		skyplot.RelocateFigure(sat_labels[row], new_x, new_y + 10)
 	
 	# sort sat_data by distance to observer
 
