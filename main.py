@@ -62,7 +62,7 @@ for row, entry in enumerate(USER_SATS):
 			sat_data[row].append(0)
 
 # Graph constants
-C_LEN = 600  # must be divisible by 2
+C_LEN = 400  # must be divisible by 2
 C_CENTER = (C_LEN / 2, C_LEN / 2)
 C_OFFSET = 10
 C_LEN_OFF = C_LEN - C_OFFSET
@@ -77,7 +77,7 @@ def plot_polar(az, alt):
 	# 	return None
 	
 	# calculate radius in pixels
-	magnitude = (90 - alt) / 90
+	magnitude = (90 - abs(alt)) / 90
 	radius = C_LEN_OFF / 2 * magnitude
 
 	# calculate azimuth x, y
@@ -123,8 +123,8 @@ tab2_layout = [[sg.Graph(canvas_size=(C_LEN, C_LEN),
 			key='skyplot')]]
 
 tab_group_layout = [[
-	sg.Tab('Tab 1', tab1_layout, font='Courier 15', key='-TAB1-'),
-	sg.Tab('Tab 2', tab2_layout, font='Courier 15', key='-TAB2-')
+	sg.Tab('Table', tab1_layout, font='Courier 15', key='-TAB1-'),
+	sg.Tab('Skyplot', tab2_layout, font='Courier 15', key='-TAB2-')
 
 ]]
 
@@ -133,8 +133,10 @@ layout = [[sg.TabGroup(tab_group_layout,
                        key='-TABGROUP-')],
           [sg.Button('Exit')]]
 
+WINDOW_X = 720
+WINDOW_Y = 480
 
-window = sg.Window('SatTrack', layout, size=(720, 480), finalize=True, no_titlebar=True)
+window = sg.Window('PiSat', layout, size=(WINDOW_X, WINDOW_Y), finalize=True, no_titlebar=False, element_justification='c')
 
 skyplot = window['skyplot']
 skyplot.draw_point(C_CENTER, size=6, color='white')
