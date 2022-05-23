@@ -113,17 +113,14 @@ def draw_altitude_circles(graph, divs=6):
 		radius += circle_offset
 		angle_label -= angle_offset
 
-tab1_layout = [
-	[sg.Table(values=sat_data, 
+tab1_layout = [[sg.Table(values=sat_data, 
 				headings=headings, 
-				key='SAT_TABLE')]
-]
-tab2_layout = [
-	[sg.Graph(canvas_size=(C_LEN, C_LEN), 
+				key='SAT_TABLE')]]
+
+tab2_layout = [[sg.Graph(canvas_size=(C_LEN, C_LEN), 
 			graph_bottom_left=(0, 0), 
 			graph_top_right=(C_LEN, C_LEN),
-			key='skyplot')]
-]
+			key='skyplot')]]
 
 tab_group_layout = [[
 	sg.Tab('Tab 1', tab1_layout, font='Courier 15', key='-TAB1-'),
@@ -137,7 +134,7 @@ layout = [[sg.TabGroup(tab_group_layout,
           [sg.Button('Exit')]]
 
 
-window = sg.Window('SatTrack', layout, finalize=True)
+window = sg.Window('SatTrack', layout, size=(720, 480), finalize=True, no_titlebar=True)
 
 skyplot = window['skyplot']
 skyplot.draw_point(C_CENTER, size=6, color='white')
