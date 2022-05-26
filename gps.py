@@ -1,3 +1,4 @@
+from datetime import timedelta
 import io
 from skyfield.api import load, wgs84
 from serial import Serial, SerialException
@@ -53,6 +54,8 @@ class GPS:
 				alt = nmea.altitude
 				# create wgs84 object
 				self.position = wgs84.latlon(lat, lon, alt)
+		
+		return self.position
 
 	def get_pos(self):
 		"""Returns the last received position. Use update_pos() to update the coordinates."""
@@ -66,3 +69,19 @@ class GPS:
 		t = self.time_scale.now()
 		topocentric = difference.at(t)
 		return topocentric.altaz()
+
+	def calc_path(self, satellite):
+		"""
+		Calculates ephemeris of the specified satellite while it is visible.
+		"""
+		t = self.time_scale.now()
+		sat_ephemeris = []
+		alt, az, distance = self.calc_diff(satellite)
+		while alt.degrees >= 0:
+			difference = satellite - self.position
+			topocentric = difference.at(t)
+			alt, az, distance = topocentric.altaz()
+			sat_ephemeris.append((az.degrees, alt.degrees))
+			t += timedelta(seconds=2)
+
+		return sat_ephemeris
