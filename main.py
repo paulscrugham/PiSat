@@ -8,63 +8,23 @@ DEBUG = False
 
 REFRESH_RATE = 1000  # used with window.read() to set the data refresh rate
 
-# constant variable to store user provided sat data.
-# format: {ID:[UP, DOWN]}
+# Application window dimensions
+WINDOW_X = 720
+WINDOW_Y = 480
 
-sat_file = open('user_sats.json')
-USER_SATS = json.load(sat_file)
+THEME = 'Dark'
 
-# initialize PiSat
-ps = PiSat(USER_SATS, expiry=5)
-ps.load_tles('https://celestrak.com/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle') # downloads TLEs from CelesTrak from the amsat group
-
-# get current location of observer
-ps.update_pos()
-if DEBUG: print("Observer position:", ps.get_pos())
-
-events = ps.calc_events()
-print(events[25544][0])
-print(events[25544][1])
-
-# ps.calc_ephem()
-
-for ti, event in zip(events[25544][0], events[25544][1]):
-	name = ('rise above 0°', 'culminate', 'set below 0°')[event]
-	print(type(ti))
-	print(ti.utc_strftime('%Y %b %d %H:%M:%S'), name)
-
-sg.theme('Dark')
-
-sat_data = []
-headings = ['ID', 'NAME', 'ALTITUDE', 'AZIMUTH', 'DISTANCE', 'UPLINK', 'DOWNLINK']
-
-# initialize table data list of lists
-# TODO: change list of headings to look up table
-for row, entry in enumerate(USER_SATS):
-	sat_data.append([])
-	sat = ps.get_tle(entry)
-	for col in headings:
-		if col == 'ID':
-			sat_data[row].append(sat.model.satnum)
-		elif col == 'NAME':
-			sat_data[row].append(sat.name)
-		elif col == 'UPLINK':
-			sat_data[row].append(USER_SATS[entry]['up'])
-		elif col == 'DOWNLINK':
-			sat_data[row].append(USER_SATS[entry]['down'])
-		else:
-			sat_data[row].append(0)
-
-# Graph constants
-C_LEN = 400  # must be divisible by 2
-C_CENTER = (C_LEN / 2, C_LEN / 2)
-C_OFFSET = 10
+# Skyplot graph settings
+C_LEN = 400  # canvas x and y dimension
+C_CENTER = (C_LEN / 2, C_LEN / 2)  # a tuple representing the center of the canvas
+C_OFFSET = 10  # margin in pixels
 C_LEN_OFF = C_LEN - C_OFFSET
 
-# Skyplot Graphic constants
+# Skyplot altitude line thickness
 ALT_MINOR = 1
 ALT_MAJOR = 2
 
+# Skyplot functions
 def plot_polar(az, alt):
 	# don't plot point if altitude is below 0 degrees
 	# if alt < 0:
@@ -107,9 +67,47 @@ def draw_altitude_circles(graph, divs=6):
 		radius += circle_offset
 		angle_label -= angle_offset
 
+
+# load user defined list of satellites to track
+sat_file = open('user_sats.json')
+USER_SATS = json.load(sat_file)  # format: {ID:[UP, DOWN]}
+
+# initialize PiSat
+ps = PiSat(USER_SATS, expiry=5)
+ps.load_tles('https://celestrak.com/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle') # downloads TLEs from CelesTrak from the amsat group
+
+# get current location of observer
+ps.update_pos()
+if DEBUG: print("Observer position:", ps.get_pos())
+
+
+sat_data = []
+headings = ['ID', 'NAME', 'ALT (deg)', 'AZ (deg)', 'DIST (km)', 'UPLINK', 'DOWNLINK']
+col_vis = [True, True, True, True, False, True, True]
+
+# initialize table data list of lists
+# TODO: change list of headings to look up table
+for row, entry in enumerate(USER_SATS):
+	sat_data.append([])
+	sat = ps.get_tle(entry)
+	for col in headings:
+		if col == 'ID':
+			sat_data[row].append(sat.model.satnum)
+		elif col == 'NAME':
+			sat_data[row].append(sat.name)
+		elif col == 'UPLINK':
+			sat_data[row].append(USER_SATS[entry]['up'])
+		elif col == 'DOWNLINK':
+			sat_data[row].append(USER_SATS[entry]['down'])
+		else:
+			sat_data[row].append(0)
+
+
 tab1_layout = [[sg.Table(values=sat_data, 
 				headings=headings, 
-				key='SAT_TABLE')]]
+				key='SAT_TABLE', 
+				expand_y=True,
+				visible_column_map=col_vis)]]
 
 tab2_layout = [[sg.Graph(canvas_size=(C_LEN, C_LEN), 
 			graph_bottom_left=(0, 0), 
@@ -126,11 +124,10 @@ layout = [[sg.TabGroup(tab_group_layout,
                        key='-TABGROUP-')],
           [sg.Button('Exit')]]
 
-WINDOW_X = 720
-WINDOW_Y = 480
-
 window = sg.Window('PiSat', layout, size=(WINDOW_X, WINDOW_Y), finalize=True, no_titlebar=False, element_justification='c')
+sg.theme(THEME)
 
+# initialize skyplot view
 skyplot = window['skyplot']
 skyplot.draw_point(C_CENTER, size=6, color='white')
 draw_altitude_circles(skyplot)
@@ -145,6 +142,7 @@ for entry in USER_SATS:
 	sat_points.append(skyplot.draw_point(C_CENTER, size=6, color='red'))
 	sat_labels.append(skyplot.draw_text(sat.name, (C_CENTER[0], C_CENTER[1]), color='white'))
 	sat_paths.append(None)
+
 
 # main application loop
 while True:
