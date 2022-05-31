@@ -60,6 +60,9 @@ class PiSat:
 		Returns a single TLE from the look up dictionary.
 		"""
 		return self.TLEs[int(id)]
+
+	def get_tles(self):
+		return self.TLEs
 	
 	def update_pos(self):
 		"""
