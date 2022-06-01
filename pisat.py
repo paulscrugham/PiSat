@@ -64,26 +64,31 @@ class PiSat:
 	def get_tles(self):
 		return self.TLEs
 	
-	def update_pos(self):
+	def update_pos(self, pos=None):
 		"""
 		Returns a Skyfield object representing the position of the observer.
 		"""
 		# TODO: add while loop to handle sat lock - took awhile to start streaming GPS data on 5/12
-		# get first GGA message to use as current location
+		
 		self.position = {}
-		while not self.position:
-			nmea = self._read_line()
-			# check for GGA type (Global positioning system fix data)
-			if nmea.identifier()[2:5] == 'GGA':
-				lat = float(nmea.lat) / 100
-				if nmea.lat_dir == 'S':
-					lat = -lat
-				lon = float(nmea.lon) / 100
-				if nmea.lon_dir == 'W':
-					lon = -lon
-				alt = nmea.altitude
-				# create wgs84 object
-				self.position = wgs84.latlon(lat, lon, alt)
+		if pos:
+			# if position is provided as an argument
+			self.position = wgs84.latlon(pos[0], pos[1], pos[2])
+		else:
+			# get first GGA message to use as current location
+			while not self.position:
+				nmea = self._read_line()
+				# check for GGA type (Global positioning system fix data)
+				if nmea.identifier()[2:5] == 'GGA':
+					lat = float(nmea.lat) / 100
+					if nmea.lat_dir == 'S':
+						lat = -lat
+					lon = float(nmea.lon) / 100
+					if nmea.lon_dir == 'W':
+						lon = -lon
+					alt = nmea.altitude
+					# create wgs84 object
+					self.position = wgs84.latlon(lat, lon, alt)
 		
 		return self.position
 

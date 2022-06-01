@@ -3,6 +3,7 @@ from skyfield.api import load
 import PySimpleGUI as sg
 import math
 import json
+import sys
 
 from pisat import PiSat
 
@@ -156,6 +157,7 @@ def map_colors(sat_data):
 
 # Application code
 if __name__ == '__main__':
+
 	# load user defined list of satellites to track
 	with open('user_sats.json', 'r+') as sat_file:
 		USER_SATS = json.load(sat_file)  # format: {ID:[UP, DOWN]}
@@ -165,8 +167,13 @@ if __name__ == '__main__':
 	ps.load_tles('https://celestrak.com/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle') # downloads TLEs from CelesTrak from the amsat group
 
 	# get current location of observer
-	ps.update_pos()
-	# if DEBUG: print("Observer position:", ps.get_pos())
+	if len(sys.argv) > 1:
+		# get lat, lon, and elevation
+		ps.update_pos([float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])])
+	else:
+		ps.update_pos()
+	
+	if DEBUG: print("Observer position:", ps.get_pos())
 
 
 	headings = ['ID', 'NAME', 'ALT (deg)', 'AZ (deg)', 'DIST (km)', 'UPLINK', 'DOWNLINK']
@@ -241,8 +248,7 @@ if __name__ == '__main__':
 	# main application loop
 	while True:
 		event, values = window.read(REFRESH_RATE)
-		# if DEBUG: print(event, values)
-		print(event)
+		if DEBUG: print(event)
 
 		# loop to update satellite date
 		for row, entry in enumerate(USER_SATS):
@@ -298,9 +304,6 @@ if __name__ == '__main__':
 			for config in sat_config:
 				config[0].update(value=False)
 
-
-		# Update the "output" text element
-		# to be the value of "input" element
 		window['SAT_TABLE'].update(sat_data, row_colors=map_colors(sat_data))
 
 	window.close()
