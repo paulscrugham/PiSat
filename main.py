@@ -1,4 +1,3 @@
-from turtle import update
 from skyfield.api import load
 import PySimpleGUI as sg
 import math
