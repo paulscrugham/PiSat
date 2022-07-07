@@ -6,9 +6,13 @@ PiSat is a Python GUI application running on a Raspberry Pi to help HAM radio op
 
 ## What does PiSat do?
 
-PiSat allows a user to select amateur radio satellites they want to track and displays their current position in table and skyplot views. Users can also enter up/downlink frequencies for each satellite to make it easier to tune a radio while tracking the satellite. 
+PiSat allows a user to select amateur radio satellites they want to track and displays their current position in table and skyplot views. Users can also enter up/downlink frequencies for each satellite to make it easier to tune a radio while tracking the satellite.
+
+![alt text](https://github.com/paulscrugham/PiSat/blob/master/README/table.png)
 
 The **Table** view shows current information about each tracked satellite. It also colors each satellite table row based on how far they are above an altitude of 0 degrees to make it easy to identify which satellites are highest in the sky. This view also shows the user-provided up/downlink for each satellite.
+
+![alt text](https://github.com/paulscrugham/PiSat/blob/master/README/skyplot.png)
 
 The **Skyplot** view shows the current location of satellites above an altitude of 0 degrees on a polar graph. The polar graph plots a satellite by its altitude and azimuth with 90 degrees being the center. Also shown is a trajectory path for each visible satellite showing how they will pass over the observer.
 
