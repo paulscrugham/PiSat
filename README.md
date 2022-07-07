@@ -1,4 +1,4 @@
-# PiSat?
+# PiSat
 
 ## What is PiSat?
 
