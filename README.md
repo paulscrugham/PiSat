@@ -12,4 +12,6 @@ The **Table** view shows current information about each tracked satellite. It al
 
 The **Skyplot** view shows the current location of satellites above an altitude of 0 degrees on a polar graph. The polar graph plots a satellite by its altitude and azimuth with 90 degrees being the center. Also shown is a trajectory path for each visible satellite showing how they will pass over the observer.
 
+![alt text](https://github.com/paulscrugham/PiSat/blob/master/README/config.png)
+
 The **Configure Satellites** view allows the user to select which satellites they would like shown in the Table and Skyplot views as well as manually enter up/downlink frequencies to be shown in the Table view.
