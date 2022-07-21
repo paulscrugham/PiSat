@@ -1,5 +1,7 @@
 from skyfield.api import load
 import PySimpleGUI as sg
+import cv2
+import numpy as np
 import math
 import json
 import sys
@@ -13,6 +15,10 @@ REFRESH_RATE = 1000  # used with window.read() to set the data refresh rate
 # Application window dimensions
 WINDOW_X = 720
 WINDOW_Y = 480
+
+# Camera view angles (degrees)
+CAM_H = 62.2
+CAM_V = 48.8
 
 THEME = 'Dark'
 
@@ -220,10 +226,13 @@ if __name__ == '__main__':
 					size=(None, 300))],
 					[sg.Button('Update Satellites'), sg.Button('Check All'), sg.Button('Check None')]]
 
+	tab4_layout = [[sg.Image(filename='', key='image')]]
+
 	tab_group_layout = [[
 		sg.Tab('Table', tab1_layout, font='Courier 15', key='-TAB1-'),
 		sg.Tab('Skyplot', tab2_layout, font='Courier 15', key='-TAB2-'),
-		sg.Tab('Configure Satellites', tab3_layout, font='Courier 15', key='-TAB3-', expand_y=True)
+		sg.Tab('Configure Satellites', tab3_layout, font='Courier 15', key='-TAB3-', expand_y=True),
+		sg.Tab('SkyView', tab4_layout, key='-TAB4-')
 	]]
 
 	layout = [	[sg.TabGroup(tab_group_layout,
@@ -243,6 +252,9 @@ if __name__ == '__main__':
 
 	# initialize list of sat points, labels, and paths
 	sat_points, sat_labels, sat_paths = update_skyplot(USER_SATS, ps, skyplot)
+
+	# initialize opencv camera
+	cap = cv2.VideoCapture(0)
 
 	# main application loop
 	while True:
@@ -285,6 +297,11 @@ if __name__ == '__main__':
 					skyplot.delete_figure(sat_paths[row][i])
 
 				sat_paths[row] = None
+
+		# SKYVIEW - update camera
+		ret, frame = cap.read()
+		imgbytes = cv2.imencode('.png', frame)[1].tobytes()  # ditto
+		window['image'].update(data=imgbytes)
 
 		if event in (None, 'Exit'):
 			break
