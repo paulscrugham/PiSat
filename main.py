@@ -1,7 +1,6 @@
 from skyfield.api import load
 import PySimpleGUI as sg
 import cv2
-import numpy as np
 import math
 import json
 import sys
@@ -19,6 +18,11 @@ WINDOW_Y = 480
 # Camera view angles (degrees)
 CAM_H = 62.2
 CAM_V = 48.8
+
+# Camera direction (degrees)
+CAM_AZ = 180
+CAM_ALT = 45
+
 
 THEME = 'Dark'
 
@@ -302,6 +306,9 @@ if __name__ == '__main__':
 		ret, frame = cap.read()
 		imgbytes = cv2.imencode('.png', frame)[1].tobytes()  # ditto
 		window['image'].update(data=imgbytes)
+
+		# plot satellite on skyview
+
 
 		if event in (None, 'Exit'):
 			break
