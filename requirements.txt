@@ -2,3 +2,4 @@ pynmea2==1.18.0
 pyserial==3.5
 skyfield==1.42
 PySimpleGUI
+opencv-python==4.6.0.66

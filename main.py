@@ -19,10 +19,13 @@ WINDOW_Y = 480
 CAM_H = 62.2
 CAM_V = 48.8
 
-# Camera direction (degrees)
-CAM_AZ = 180
-CAM_ALT = 45
+# Skyview camera window dimensions
+SKYVIEW_X = 400
+SKYVIEW_Y = SKYVIEW_X * CAM_V / CAM_H
 
+# Camera direction (degrees) - currently based on fixed camera position
+CAM_AZ = 135
+CAM_ALT = 45
 
 THEME = 'Dark'
 
@@ -54,6 +57,21 @@ def plot_polar(az, alt):
 	x = math.sin(az_rads) * radius + C_CENTER[0]
 	y = math.cos(az_rads) * radius + C_CENTER[1]
 	return x, y
+
+def plot_rectangular(az, alt, rect_x, rect_y):
+	# calculate visible area of sky
+	min_alt = CAM_ALT - CAM_V / 2
+	min_az = CAM_AZ - CAM_H / 2
+	# degrees above/past the minimum view angle
+	delta_alt = alt - min_alt
+	delta_az = az - min_az
+	# position in visible area as ratio of angles
+	ratio_alt = delta_alt / CAM_ALT
+	ratio_az = delta_az / CAM_AZ
+	# x, y position relative to specified window size
+	y_pos = ratio_alt * rect_y
+	x_pos = ratio_az * rect_x
+	return x_pos, y_pos
 
 def draw_azimuth_lines(graph, divs=12):
 	# draw azimuth lines
@@ -230,13 +248,16 @@ if __name__ == '__main__':
 					size=(None, 300))],
 					[sg.Button('Update Satellites'), sg.Button('Check All'), sg.Button('Check None')]]
 
-	tab4_layout = [[sg.Image(filename='', key='image')]]
+	tab4_layout = [[sg.Graph(canvas_size=(SKYVIEW_X, SKYVIEW_Y), 
+				graph_bottom_left=(0, 0), 
+				graph_top_right=(SKYVIEW_X, SKYVIEW_Y),
+				key='skyview')]]
 
 	tab_group_layout = [[
 		sg.Tab('Table', tab1_layout, font='Courier 15', key='-TAB1-'),
 		sg.Tab('Skyplot', tab2_layout, font='Courier 15', key='-TAB2-'),
 		sg.Tab('Configure Satellites', tab3_layout, font='Courier 15', key='-TAB3-', expand_y=True),
-		sg.Tab('SkyView', tab4_layout, key='-TAB4-')
+		sg.Tab('SkyView', tab4_layout, font='Courier 15', key='-TAB4-')
 	]]
 
 	layout = [	[sg.TabGroup(tab_group_layout,
@@ -254,6 +275,8 @@ if __name__ == '__main__':
 	draw_altitude_circles(skyplot)
 	draw_azimuth_lines(skyplot)
 
+	skyview = window['skyview']
+
 	# initialize list of sat points, labels, and paths
 	sat_points, sat_labels, sat_paths = update_skyplot(USER_SATS, ps, skyplot)
 
@@ -264,6 +287,13 @@ if __name__ == '__main__':
 	while True:
 		event, values = window.read(REFRESH_RATE)
 		if DEBUG: print(event)
+
+		skyview.erase()
+		
+		# SKYVIEW - update camera
+		ret, frame = cap.read()
+		imgbytes = cv2.imencode('.png', frame)[1].tobytes()  # ditto
+		skyview.DrawImage(data=imgbytes, location=(0, SKYVIEW_Y))
 
 		# loop to update satellite date
 		for row, entry in enumerate(USER_SATS):
@@ -302,13 +332,9 @@ if __name__ == '__main__':
 
 				sat_paths[row] = None
 
-		# SKYVIEW - update camera
-		ret, frame = cap.read()
-		imgbytes = cv2.imencode('.png', frame)[1].tobytes()  # ditto
-		window['image'].update(data=imgbytes)
-
-		# plot satellite on skyview
-
+			# SKYVIEW: draw satellite locations as points
+			skyview_point = plot_rectangular(az.degrees, alt.degrees, SKYVIEW_X, SKYVIEW_Y)
+			skyview.draw_point(skyview_point, size=6, color='red')
 
 		if event in (None, 'Exit'):
 			break
