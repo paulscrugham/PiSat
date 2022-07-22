@@ -2,3 +2,5 @@
 __pycache__/
 gp.php
 *.php
+user_sats.json
+cv-test.py
