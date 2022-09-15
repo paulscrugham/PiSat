@@ -1,6 +1,8 @@
 # PiSat
 
-See the PiSat in action in this video! https://youtu.be/-QSAdjNMguM?t=193
+See the PiSat in action in this video! 
+
+[![PiSat Video](https://img.youtube.com/vi/-QSAdjNMguM?t=193/0.jpg)](https://youtu.be/-QSAdjNMguM?t=193)
 
 ## What is PiSat?
 
