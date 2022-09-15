@@ -2,7 +2,7 @@
 
 See the PiSat in action in this video! 
 
-[![PiSat Video](https://github.com/paulscrugham/PiSat/blob/master/README/PiSat.jpg)](https://youtu.be/-QSAdjNMguM?t=193)
+[![PiSat Video](https://github.com/paulscrugham/PiSat/blob/master/README/pisat.jpg)](https://youtu.be/-QSAdjNMguM?t=193)
 
 ## What is PiSat?
 
