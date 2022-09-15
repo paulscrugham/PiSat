@@ -1,5 +1,7 @@
 # PiSat
 
+See the PiSat in action in this video! https://youtu.be/-QSAdjNMguM?t=193
+
 ## What is PiSat?
 
 PiSat is a Python GUI application running on a Raspberry Pi to help HAM radio operators aim an antenna at a satellite they want to communicate with and track it as it moves across the sky. All prediction calculations are performed on the device with occasional satellite TLE data updates from CelesTrak.
